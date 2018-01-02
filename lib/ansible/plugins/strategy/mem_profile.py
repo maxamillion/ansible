@@ -19,7 +19,7 @@ import os
 
 from ansible.plugins.strategy.linear import StrategyModule as LinearStrategyModule
 
-import objgraph
+#import objgraph
 import memory_profiler as mem_profile
 
 DOCUMENTATION = '''
@@ -78,7 +78,7 @@ def extra_info_id(obj):
 
 def show_common_ansible_types(limit=None):
     print('\nmost common ansible types:')
-    common = objgraph.most_common_types(shortnames=False, limit=limit)
+#    common = objgraph.most_common_types(shortnames=False, limit=limit)
     ans_stats = [x for x in common if x[0].startswith('ansible') and x[1] > 1]
     show_table(ans_stats)
 
@@ -107,10 +107,10 @@ def track_mem(msg=None, pid=None, call_stack=None, subsystem=None, prev_mem=None
         print('MEM change: %s MiB cur: %s prev: %s (pid=%s) %s -- %s' %
               (delta, new_mem, prev_mem, pid, subsystem, msg))
 
-        print('new objects:')
-        objgraph.show_growth(limit=30, shortnames=False)
+        #print('new objects:')
+        #objgraph.show_growth(limit=30, shortnames=False)
 
-        show_common_ansible_types(limit=2000)
+        #show_common_ansible_types(limit=2000)
         print('\n')
 
     return prev_mem
@@ -126,19 +126,19 @@ def show_refs(filename=None, objs=None, max_depth=5, max_objs=None):
     if max_objs:
         objs = objs[:max_objs]
 
-    objgraph.show_refs(objs,
-                       filename=refs_full_fn,
-                       refcounts=True,
-                       extra_info=extra_info_id,
-                       shortnames=False,
-                       max_depth=max_depth)
-
-    objgraph.show_backrefs(objs,
-                           refcounts=True,
-                           shortnames=False,
-                           extra_info=extra_info_id,
-                           filename=backrefs_full_fn,
-                           max_depth=max_depth)
+    #objgraph.show_refs(objs,
+    #                   filename=refs_full_fn,
+    #                   refcounts=True,
+    #                   extra_info=extra_info_id,
+    #                   shortnames=False,
+    #                   max_depth=max_depth)
+#
+#    objgraph.show_backrefs(objs,
+#                           refcounts=True,
+#                           shortnames=False,
+#                           extra_info=extra_info_id,
+#                           filename=backrefs_full_fn,
+#                           max_depth=max_depth)
 
 
 class StrategyModule(LinearStrategyModule):
@@ -159,11 +159,11 @@ class StrategyModule(LinearStrategyModule):
         res = super(StrategyModule, self).run(iterator, play_context)
         self.track_mem(msg='after run')
 
-        show_common_ansible_types()
+        #show_common_ansible_types()
 
-        # example of dumping graphviz dot/pngs for ref graph of some objs
-        tis = objgraph.by_type('ansible.playbook.task_include.TaskInclude')
-        show_refs(filename='task_include_refs', objs=tis, max_depth=6, max_objs=1)
+##        # example of dumping graphviz dot/pngs for ref graph of some objs
+#        tis = objgraph.by_type('ansible.playbook.task_include.TaskInclude')
+#        show_refs(filename='task_include_refs', objs=tis, max_depth=6, max_objs=1)
 
         return res
 
