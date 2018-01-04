@@ -54,9 +54,11 @@ from ansible.utils.vars import combine_vars
 
 FOUND = {}
 
+import q
 
 class VarsModule(BaseVarsPlugin):
 
+    @q.t
     def get_vars(self, loader, path, entities, cache=True):
         ''' parses the inventory file '''
 
@@ -67,15 +69,19 @@ class VarsModule(BaseVarsPlugin):
 
         data = {}
         for entity in entities:
+            q.q(entity)
             if isinstance(entity, Host):
                 subdir = 'host_vars'
+                q.q(subdir)
             elif isinstance(entity, Group):
                 subdir = 'group_vars'
+                q.q(subdir)
             else:
                 raise AnsibleParserError("Supplied entity must be Host or Group, got %s instead" % (type(entity)))
 
             # avoid 'chroot' type inventory hostnames /path/to/chroot
             if not entity.name.startswith(os.path.sep):
+                q.q(not entity.name.startswith(os.path.sep))
                 try:
                     found_files = []
                     # load vars
@@ -103,6 +109,7 @@ class VarsModule(BaseVarsPlugin):
                     raise AnsibleParserError(to_native(e))
         return data
 
+    @q.t
     def _find_vars_files(self, path, name):
         """ Find {group,host}_vars files """
 
@@ -131,6 +138,7 @@ class VarsModule(BaseVarsPlugin):
                     break
         return found
 
+    @q.t
     def _get_dir_files(self, path):
 
         found = []

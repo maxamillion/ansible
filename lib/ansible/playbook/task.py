@@ -46,6 +46,8 @@ except ImportError:
 
 __all__ = ['Task']
 
+import q
+
 
 class Task(Base, Conditional, Taggable, Become):
 
@@ -97,8 +99,11 @@ class Task(Base, Conditional, Taggable, Become):
         else:
             self._parent = block
 
+        q.q(self._parent)
+
         super(Task, self).__init__()
 
+    @q.t
     def get_path(self):
         ''' return the absolute path of the task with its line number '''
 

@@ -45,13 +45,15 @@ from ansible.utils.vars import combine_vars
 from ansible.utils.unsafe_proxy import wrap_var
 from ansible.vars.clean import namespace_facts
 
+import q
+
 try:
     from __main__ import display
 except ImportError:
     from ansible.utils.display import Display
     display = Display()
 
-
+@q.t
 def preprocess_vars(a):
     '''
     Ensures that vars contained in the parameter passed in are
@@ -73,11 +75,14 @@ def preprocess_vars(a):
     return data
 
 
+
 class VariableManager:
 
     _ALLOWED = frozenset(['plugins_by_group', 'groups_plugins_play', 'groups_plugins_inventory', 'groups_inventory',
                           'all_plugins_play', 'all_plugins_inventory', 'all_inventory'])
 
+
+    @q.t
     def __init__(self, loader=None, inventory=None):
 
         self._nonpersistent_fact_cache = defaultdict(dict)
@@ -99,6 +104,7 @@ class VariableManager:
             # fallback to a dict as in memory cache
             self._fact_cache = {}
 
+    @q.t
     def __getstate__(self):
         data = dict(
             fact_cache=self._fact_cache,
@@ -113,6 +119,7 @@ class VariableManager:
         )
         return data
 
+    @q.t
     def __setstate__(self, data):
         self._fact_cache = data.get('fact_cache', defaultdict(dict))
         self._nonpersistent_fact_cache = data.get('np_fact_cache', defaultdict(dict))
@@ -125,32 +132,38 @@ class VariableManager:
         self._options_vars = data.get('options_vars', dict())
 
     @property
+    @q.t
     def extra_vars(self):
         ''' ensures a clean copy of the extra_vars are made '''
         return self._extra_vars.copy()
 
     @extra_vars.setter
+    @q.t
     def extra_vars(self, value):
         ''' ensures a clean copy of the extra_vars are used to set the value '''
         if not isinstance(value, MutableMapping):
             raise AnsibleAssertionError("the type of 'value' for extra_vars should be a MutableMapping, but is a %s" % type(value))
         self._extra_vars = value.copy()
 
+    @q.t
     def set_inventory(self, inventory):
         self._inventory = inventory
 
     @property
+    @q.t
     def options_vars(self):
         ''' ensures a clean copy of the options_vars are made '''
         return self._options_vars.copy()
 
     @options_vars.setter
+    @q.t
     def options_vars(self, value):
         ''' ensures a clean copy of the options_vars are used to set the value '''
         if not isinstance(value, dict):
             raise AnsibleAssertionError("the type of 'value' for options_vars should be a dict, but is a %s" % type(value))
         self._options_vars = value.copy()
 
+    @q.t
     def _preprocess_vars(self, a):
         '''
         Ensures that vars contained in the parameter passed in are
@@ -171,6 +184,7 @@ class VariableManager:
 
         return data
 
+    @q.t
     def get_vars(self, play=None, host=None, task=None, include_hostvars=True, include_delegate_to=True, use_cache=True):
         '''
         Returns the variables, with optional "context" given via the parameters
@@ -212,6 +226,7 @@ class VariableManager:
                 all_vars = combine_vars(all_vars, role.get_default_vars())
 
         if task:
+            q.q(C.PLAYBOOK_VARS_ROOT)
             # set basedirs
             if C.PLAYBOOK_VARS_ROOT == 'all':  # should be default
                 basedirs = task.get_search_path()
@@ -268,8 +283,10 @@ class VariableManager:
                 ''' merges all entities adjacent to play '''
                 data = {}
                 for plugin in vars_loader.all():
+                    q.q(basedirs)
                     for path in basedirs:
                         data = combine_vars(data, _get_plugin_vars(plugin, path, entities))
+
                 return data
 
             # configurable functions that are sortable via config, rememer to add to _ALLOWED if expanding this list
@@ -445,6 +462,7 @@ class VariableManager:
         display.debug("done with get_vars()")
         return all_vars
 
+    @q.t
     def _get_magic_variables(self, play, host, task, include_hostvars, include_delegate_to):
         '''
         Returns a dictionary of so-called "magic" variables in Ansible,
@@ -492,6 +510,7 @@ class VariableManager:
 
         return variables
 
+    @q.t
     def _get_delegated_vars(self, play, task, existing_variables):
         # we unfortunately need to template the delegate_to field here,
         # as we're fetching vars before post_validate has been called on
@@ -583,6 +602,7 @@ class VariableManager:
             )
         return delegated_host_vars
 
+    @q.t
     def clear_facts(self, hostname):
         '''
         Clears the facts for a host
@@ -590,6 +610,7 @@ class VariableManager:
         if hostname in self._fact_cache:
             del self._fact_cache[hostname]
 
+    @q.t
     def set_host_facts(self, host, facts):
         '''
         Sets or updates the given facts for a host in the fact cache.
@@ -606,6 +627,7 @@ class VariableManager:
             except KeyError:
                 self._fact_cache[host.name] = facts
 
+    @q.t
     def set_nonpersistent_facts(self, host, facts):
         '''
         Sets or updates the given facts for a host in the fact cache.
@@ -622,6 +644,7 @@ class VariableManager:
             except KeyError:
                 self._nonpersistent_fact_cache[host.name] = facts
 
+    @q.t
     def set_host_variable(self, host, varname, value):
         '''
         Sets a value in the vars_cache for a host.
