@@ -51,6 +51,8 @@ except ImportError:
     from ansible.utils.display import Display
     display = Display()
 
+import q
+
 VARIABLE_CACHE = dict()
 HOSTVARS_CACHE = dict()
 
@@ -59,6 +61,7 @@ class AnsibleInventoryVarsData(dict):
         super(AnsibleInventoryVarsData, self).__init__(*args, **kwargs)
         self.path = None
 
+@q.t
 def preprocess_vars(a):
     '''
     Ensures that vars contained in the parameter passed in are
@@ -79,6 +82,7 @@ def preprocess_vars(a):
 
     return data
 
+@q.t
 def strip_internal_keys(dirty):
     '''
     All keys stating with _ansible_ are internal, so create a copy of the 'dirty' dict
@@ -95,6 +99,7 @@ def strip_internal_keys(dirty):
 
 class VariableManager:
 
+    @q.t
     def __init__(self):
 
         self._nonpersistent_fact_cache = defaultdict(dict)
@@ -115,6 +120,7 @@ class VariableManager:
             # fallback to a dict as in memory cache
             self._fact_cache = {}
 
+    @q.t
     def __getstate__(self):
         data = dict(
             fact_cache = self._fact_cache,
@@ -129,6 +135,7 @@ class VariableManager:
         )
         return data
 
+    @q.t
     def __setstate__(self, data):
         self._fact_cache = data.get('fact_cache', defaultdict(dict))
         self._nonpersistent_fact_cache = data.get('np_fact_cache', defaultdict(dict))
@@ -140,6 +147,7 @@ class VariableManager:
         self._inventory = data.get('inventory', None)
         self._options_vars = data.get('options_vars', dict())
 
+    @q.t
     def _get_cache_entry(self, play=None, host=None, task=None):
         play_id = "NONE"
         if play:
@@ -156,30 +164,36 @@ class VariableManager:
         return "PLAY:%s;HOST:%s;TASK:%s" % (play_id, host_id, task_id)
 
     @property
+    @q.t
     def extra_vars(self):
         ''' ensures a clean copy of the extra_vars are made '''
         return self._extra_vars.copy()
 
     @extra_vars.setter
+    @q.t
     def extra_vars(self, value):
         ''' ensures a clean copy of the extra_vars are used to set the value '''
         assert isinstance(value, MutableMapping)
         self._extra_vars = value.copy()
 
+    @q.t
     def set_inventory(self, inventory):
         self._inventory = inventory
 
     @property
+    @q.t
     def options_vars(self):
         ''' ensures a clean copy of the options_vars are made '''
         return self._options_vars.copy()
 
     @options_vars.setter
+    @q.t
     def options_vars(self, value):
         ''' ensures a clean copy of the options_vars are used to set the value '''
         assert isinstance(value, dict)
         self._options_vars = value.copy()
 
+    @q.t
     def _preprocess_vars(self, a):
         '''
         Ensures that vars contained in the parameter passed in are
@@ -200,6 +214,7 @@ class VariableManager:
 
         return data
 
+    @q.t
     def get_vars(self, loader, play=None, host=None, task=None, include_hostvars=True, include_delegate_to=True, use_cache=True):
         '''
         Returns the variables, with optional "context" given via the parameters
@@ -224,6 +239,7 @@ class VariableManager:
         cache_entry = self._get_cache_entry(play=play, host=host, task=task)
         if cache_entry in VARIABLE_CACHE and use_cache:
             display.debug("vars are cached, returning them now")
+            q.q("VARIABLE_CACHE[cache_entry]: {}".format(VARIABLE_CACHE[cache_entry]))
             return VARIABLE_CACHE[cache_entry]
 
         all_vars = dict()
@@ -385,13 +401,16 @@ class VariableManager:
             all_vars['vars'] = all_vars.copy()
 
         display.debug("done with get_vars()")
+        q.q("all_vars: {}".format(all_vars))
         return all_vars
 
+    @q.t
     def invalidate_hostvars_cache(self, play):
         hostvars_cache_entry = self._get_cache_entry(play=play)
         if hostvars_cache_entry in HOSTVARS_CACHE:
             del HOSTVARS_CACHE[hostvars_cache_entry]
 
+    @q.t
     def _get_magic_variables(self, loader, play, host, task, include_hostvars, include_delegate_to):
         '''
         Returns a dictionary of so-called "magic" variables in Ansible,
@@ -446,6 +465,7 @@ class VariableManager:
 
         return variables
 
+    @q.t
     def _get_delegated_vars(self, loader, play, task, existing_variables):
         # we unfortunately need to template the delegate_to field here,
         # as we're fetching vars before post_validate has been called on
@@ -535,6 +555,7 @@ class VariableManager:
 
         return delegated_host_vars
 
+    @q.t
     def _get_inventory_basename(self, path):
         '''
         Returns the basename minus the extension of the given path, so the
@@ -547,6 +568,7 @@ class VariableManager:
         else:
             return name
 
+    @q.t
     def _load_inventory_file(self, path, loader, filter_ext=False):
         '''
         helper function, which loads the file and gets the
@@ -598,6 +620,7 @@ class VariableManager:
 
         return rval
 
+    @q.t
     def add_host_vars_file(self, path, loader):
         '''
         Loads and caches a host_vars file in the _host_vars_files dict,
@@ -621,6 +644,7 @@ class VariableManager:
         return data
 
 
+    @q.t
     def add_group_vars_file(self, path, loader):
         '''
         Loads and caches a host_vars file in the _host_vars_files dict,
@@ -643,6 +667,7 @@ class VariableManager:
 
         return data
 
+    @q.t
     def clear_playbook_hostgroup_vars_files(self, path):
         for f in self._host_vars_files.keys():
             keepers = []
@@ -657,6 +682,7 @@ class VariableManager:
                     keepers.append(entry)
             self._group_vars_files[f] = keepers
 
+    @q.t
     def clear_facts(self, hostname):
         '''
         Clears the facts for a host
@@ -664,6 +690,7 @@ class VariableManager:
         if hostname in self._fact_cache:
             del self._fact_cache[hostname]
 
+    @q.t
     def set_host_facts(self, host, facts):
         '''
         Sets or updates the given facts for a host in the fact cache.
@@ -679,6 +706,7 @@ class VariableManager:
             except KeyError:
                 self._fact_cache[host.name] = facts
 
+    @q.t
     def set_nonpersistent_facts(self, host, facts):
         '''
         Sets or updates the given facts for a host in the fact cache.
@@ -694,6 +722,7 @@ class VariableManager:
             except KeyError:
                 self._nonpersistent_fact_cache[host.name] = facts
 
+    @q.t
     def set_host_variable(self, host, varname, value):
         '''
         Sets a value in the vars_cache for a host.
