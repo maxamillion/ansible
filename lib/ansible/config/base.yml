@@ -862,7 +862,7 @@ DEFAULT_REMOTE_USER:
   - {key: remote_user, section: defaults}
 DEFAULT_ROLES_PATH:
   name: Roles path
-  default: ~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles
+  default: ~/.ansible/content/roles:/usr/share/ansible/content/roles:/etc/ansible/content/roles:~/.ansible/roles:/usr/share/ansible/roles:/etc/ansible/roles
   description: Colon separated paths in which Ansible will search for Roles.
   env: [{name: ANSIBLE_ROLES_PATH}]
   expand_relative_paths: True
@@ -870,6 +870,16 @@ DEFAULT_ROLES_PATH:
   - {key: roles_path, section: defaults}
   type: pathspec
   yaml: {key: defaults.roles_path}
+DEFAULT_GALAXY_CONTENT_PATH:
+  name: Galaxy Content path
+  default: ~/.ansible/content:/usr/share/ansible/content:/etc/ansible/content
+  description: Colon separated paths in which Ansible will search for Galaxy Content
+  env: [{name: ANSIBLE_GALAXY_CONTENT_PATH}]
+  expand_relative_paths: True
+  ini:
+  - {key: galaxy_content_path, section: defaults}
+  type: pathspec
+  yaml: {key: defaults.galaxy_content_path}
 DEFAULT_SCP_IF_SSH:
   # TODO: move to ssh plugin
   default: smart

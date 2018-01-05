@@ -43,7 +43,7 @@ class Galaxy(object):
         # cli option handling is responsible for making roles_path a list
         self.roles_paths = roles_path
 
-        self.roles = {}
+        self.content = {}
 
         # load data path for resource usage
         this_dir, this_filename = os.path.split(__file__)
@@ -53,9 +53,3 @@ class Galaxy(object):
     @property
     def default_role_skeleton_path(self):
         return self.DATA_PATH
-
-    def add_role(self, role):
-        self.roles[role.name] = role
-
-    def remove_role(self, role_name):
-        del self.roles[role_name]

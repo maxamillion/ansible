@@ -75,6 +75,9 @@ class RoleRequirement(RoleDefinition):
 
     @staticmethod
     def role_spec_parse(role_spec):
+        """
+        Parse a role repo+version URI and return a dict of properties
+
         # takes a repo and a version like
         # git+http://git.example.com/repos/repo.git,v1.0
         # and returns a list of properties such as:
@@ -84,6 +87,8 @@ class RoleRequirement(RoleDefinition):
         #   'version': 'v1.0',
         #   'name': 'repo'
         # }
+
+        """
         display.deprecated("The comma separated role spec format, use the yaml/explicit format instead. Line that trigger this: %s" % role_spec,
                            version="2.7")
 

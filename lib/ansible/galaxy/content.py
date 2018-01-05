@@ -43,16 +43,29 @@ except ImportError:
     display = Display()
 
 
-class GalaxyRole(object):
+class GalaxyContent(object):
 
     SUPPORTED_SCMS = set(['git', 'hg'])
     META_MAIN = os.path.join('meta', 'main.yml')
+    GALAXYFILE = 'ansible-galaxy.yml'
     META_INSTALL = os.path.join('meta', '.galaxy_install_info')
     ROLE_DIRS = ('defaults', 'files', 'handlers', 'meta', 'tasks', 'templates', 'vars', 'tests')
 
-    def __init__(self, galaxy, name, src=None, version=None, scm=None, path=None):
+    # This is a set of dirs that will be inspected at the root of the galaxy
+    # content repository in the event an ansible-galaxy.yml file is not found to
+    # provide metadata
+    CONTENT_DIRS = (
+        'library', 'roles', 'module_utils', 'action_plugins', 'filter_plugins',
+        'connection_plugins', 'inventory_plugins', 'lookup_plugins',
+        'shell_plugins', 'strategy_plugins', 'netconf_plugins'
+    )
+
+
+
+    def __init__(self, galaxy, name, src=None, version=None, scm=None, path=None, content_type="role"):
 
         self._metadata = None
+        self._galaxyfiledata = None
         self._install_info = None
         self._validate_certs = not galaxy.options.ignore_certs
 
@@ -65,6 +78,7 @@ class GalaxyRole(object):
         self.version = version
         self.src = src or name
         self.scm = scm
+        self.content_type = content_type
 
         if path is not None:
             if self.name not in path:
@@ -85,13 +99,13 @@ class GalaxyRole(object):
 
     def __repr__(self):
         """
-        Returns "rolename (version)" if version is not null
-        Returns "rolename" otherwise
+        Returns "contentname type (version)" if version is not null
+        Returns "contentname type" otherwise
         """
         if self.version:
-            return "%s (%s)" % (self.name, self.version)
+            return "%s %s (%s)" % (self.name, self.content_type, self.version)
         else:
-            return self.name
+            return "%s %s" % (self.name, self.content_type)
 
     def __eq__(self, other):
         return self.name == other.name
@@ -99,9 +113,9 @@ class GalaxyRole(object):
     @property
     def metadata(self):
         """
-        Returns role metadata
+        Returns role metadata - kept for legacy purposes
         """
-        if self._metadata is None:
+        if self.content_type == "role" and self._metadata is None:
             meta_path = os.path.join(self.path, self.META_MAIN)
             if os.path.isfile(meta_path):
                 try:
@@ -116,11 +130,28 @@ class GalaxyRole(object):
         return self._metadata
 
     @property
+    def galaxyfile(self):
+        """
+        Returns Galaxy Repository Metadata from the ansible-galaxy.yml file
+        """
+        if self._galaxyfiledata is None:
+            galaxyfile_path = os.path.join(self.path, self.GALAXYFILE)
+            if os.path.isfile(galaxyfile_path):
+                with open(galaxyfile_path, 'r') as f:
+                    try:
+                        self._galaxyfiledata = yaml.safe_load(f)
+                    except:
+                        display.vvvvv("Unable to load metadata for %s" % self.name)
+                        return False
+
+        return self._galaxyfiledata
+
+    @property
     def install_info(self):
         """
-        Returns role install info
+        Returns role install info - kept for legacy purposes
         """
-        if self._install_info is None:
+        if self.content_type == "role" and self._install_info is None:
 
             info_path = os.path.join(self.path, self.META_INSTALL)
             if os.path.isfile(info_path):
@@ -158,11 +189,12 @@ class GalaxyRole(object):
 
     def remove(self):
         """
-        Removes the specified role from the roles path.
-        There is a sanity check to make sure there's a meta/main.yml file at this
-        path so the user doesn't blow away random directories.
+        Removes the specified content from the content path.
+        There is a sanity check to make sure there's a meta/main.yml file (kept
+        for legacy purposes) or a galaxyfile at this path so the user doesn't
+        blow away random directories.
         """
-        if self.metadata:
+        if self.galaxyfile or self.metadata:
             try:
                 rmtree(self.path)
                 return True
@@ -171,19 +203,19 @@ class GalaxyRole(object):
 
         return False
 
-    def fetch(self, role_data):
+    def fetch(self, content_data):
         """
-        Downloads the archived role from github to a temp location
+        Downloads the archived content from github to a temp location
         """
-        if role_data:
+        if content_data:
 
             # first grab the file and save it to a temp location
-            if "github_user" in role_data and "github_repo" in role_data:
-                archive_url = 'https://github.com/%s/%s/archive/%s.tar.gz' % (role_data["github_user"], role_data["github_repo"], self.version)
+            if "github_user" in content_data and "github_repo" in content_data:
+                archive_url = 'https://github.com/%s/%s/archive/%s.tar.gz' % (content_data["github_user"], content_data["github_repo"], self.version)
             else:
                 archive_url = self.src
 
-            display.display("- downloading role from %s" % archive_url)
+            display.display("- downloading %s content from %s" % (self.content_type, archive_url))
 
             try:
                 url_file = open_url(archive_url, validate_certs=self._validate_certs)
@@ -201,7 +233,7 @@ class GalaxyRole(object):
 
     def install(self):
         # the file is a tar, so open it that way and extract it
-        # to the specified (or default) roles directory
+        # to the specified (or default) directory
         local_file = False
 
         if self.scm:
