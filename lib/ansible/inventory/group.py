@@ -194,6 +194,10 @@ class Group:
     def set_priority(self, priority):
         try:
             self.priority = int(priority)
+
+            # Child groups should inherit their parent's priority
+            for child_group in self.child_groups:
+                child_group.set_priority(priority)
         except TypeError:
             # FIXME: warn about invalid priority
             pass
