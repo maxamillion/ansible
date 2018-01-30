@@ -9,7 +9,14 @@ from distutils.command.build_scripts import build_scripts as BuildScripts
 from distutils.command.sdist import sdist as SDist
 
 try:
-    from setuptools import setup, find_packages
+    from Cython.Build import cythonize
+except ImportError:
+    print("Ansible now needs Cython in order to build. Install it using"
+          " your package manager (usually Cython) or via pip (pip"
+          " install Cython).")
+
+try:
+    from setuptools import setup, find_packages, Extension
     from setuptools.command.build_py import build_py as BuildPy
     from setuptools.command.install_lib import install_lib as InstallLib
     from setuptools.command.install_scripts import install_scripts as InstallScripts
@@ -158,6 +165,7 @@ for extra_requirements_filename in os.listdir(extra_requirements_dir):
         with open(os.path.join(extra_requirements_dir, extra_requirements_filename)) as extra_requirements_file:
             extra_requirements[filename_match.group(1)] = extra_requirements_file.read().splitlines()
 
+extensions = [Extension("process.worker", ["lib/ansible/executor/process/*.pyx"])]
 
 setup(
     # Use the distutils SDist so that symlinks are not expanded
@@ -221,6 +229,7 @@ setup(
     ],
     data_files=[],
     extras_require=extra_requirements,
+    ext_modules = cythonize(extensions),
     # Installing as zip files would break due to references to __file__
     zip_safe=False
 )
