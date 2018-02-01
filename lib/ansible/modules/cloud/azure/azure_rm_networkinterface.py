@@ -334,15 +334,28 @@ def nic_to_dict(nic):
     )
 
 
-def construct_ip_configuration_set(raw):
-    configurations = [str(dict(
-        private_ip_allocation_method=to_native(item.get('private_ip_allocation_method')),
-        public_ip_address_name=(to_native(item.get('public_ip_address').get('name'))
-                                if item.get('public_ip_address') else to_native(item.get('public_ip_address_name'))),
-        primary=item.get('primary'),
-        name=to_native(item.get('name'))
-    )) for item in raw]
+def construct_ip_configuration_set(raw, deprecated_ip_conf=False):
+    if deprecated_ip_conf:
+        # In the deprecated way of defining ip addresses, primary was
+        # not an option that the user could provide in order to control
+        # so we don't want to use it for comparison or else it breaks
+        # idempotentency
+        configurations = [str(dict(
+            private_ip_allocation_method=to_native(item.get('private_ip_allocation_method')),
+            public_ip_address_name=(to_native(item.get('public_ip_address').get('name'))
+                                    if item.get('public_ip_address') else to_native(item.get('public_ip_address_name'))),
+            name=to_native(item.get('name'))
+        )) for item in raw]
+    else:
+        configurations = [str(dict(
+            private_ip_allocation_method=to_native(item.get('private_ip_allocation_method')),
+            public_ip_address_name=(to_native(item.get('public_ip_address').get('name'))
+                                    if item.get('public_ip_address') else to_native(item.get('public_ip_address_name'))),
+            primary=item.get('primary'),
+            name=to_native(item.get('name'))
+        )) for item in raw]
     return set(configurations)
+
 
 ip_configuration_spec = dict(
     name=dict(type='str', required=True),
@@ -397,6 +410,7 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
         self.os_type = None
         self.open_ports = None
         self.ip_configurations = None
+        self.deprecated_ip_conf = False
 
         self.results = dict(
             changed=False,
@@ -429,8 +443,9 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
 
         if self.state == 'present' and not self.ip_configurations:
             # construct the ip_configurations array for compatiable
-            self.deprecate('Setting ip_configuration flatten is deprecated and will be removed.'
-                           ' Using ip_configurations list to define the ip configuration', version='2.9')
+            self.deprecate('Configuring ip outside of ip_configurations list is deprecated and will be removed.'
+                           ' Use ip_configurations list to define the ip configuration', version='2.9')
+            self.deprecated_ip_conf = True
             self.ip_configurations = [
                 dict(
                     private_ip_address=self.private_ip_address,
@@ -479,8 +494,9 @@ class AzureRMNetworkInterface(AzureRMModuleBase):
                 # construct two set with the same structure and then compare
                 # the list should contains:
                 # name, private_ip_address, public_ip_address_name, private_ip_allocation_method, subnet_name
-                ip_configuration_result = construct_ip_configuration_set(results['ip_configurations'])
-                ip_configuration_request = construct_ip_configuration_set(self.ip_configurations)
+                ip_configuration_result = construct_ip_configuration_set(results['ip_configurations'], deprecated_ip_conf=self.deprecated_ip_conf)
+                ip_configuration_request = construct_ip_configuration_set(self.ip_configurations, deprecated_ip_conf=self.deprecated_ip_conf)
+
                 if ip_configuration_result != ip_configuration_request:
                     self.log("CHANGED: network interface {0} ip configurations".format(self.name))
                     changed = True
