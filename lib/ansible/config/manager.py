@@ -32,13 +32,13 @@ Setting = namedtuple('Setting', 'name value origin type')
 
 
 # FIXME: see if we can unify in module_utils with similar function used by argspec
-def ensure_type(value, value_type, origin=None):
+def ensure_type(value, value_type, value_name, origin=None):
     ''' return a configuration variable with casting
     :arg value: The value to ensure correct typing of
     :kwarg value_type: The type of the value.  This can be any of the following strings:
         :boolean: sets the value to a True or False value
-        :integer: Sets the value to an integer or raises a ValueType error
-        :float: Sets the value to a float or raises a ValueType error
+        :integer: Sets the value to an integer or raises an AnsibleError error
+        :float: Sets the value to a float or raises an AnsibleError error
         :list: Treats the value as a comma separated list.  Split the value
             and return it as a python list.
         :none: Sets the value to None
@@ -57,11 +57,24 @@ def ensure_type(value, value_type, origin=None):
     if value_type:
         value_type = value_type.lower()
 
-    if value_type in ('boolean', 'bool'):
-        value = boolean(value, strict=False)
+    # For values that should not be non-empty strings, raise an error
+    #
+    # If an empty string is valid, assign cooresponding empty data type
+    # accordingly
+    if isinstance(value, string_types) and len(to_text(value)) == 0:
 
-    elif value:
-        if value_type in ('integer', 'int'):
+        if value_type in ('integer', 'int', 'float'):
+            raise AnsibleError(
+                "Invalid value for %s, expected %s, found: %r" % (value, value_type, value_name)
+            )
+        elif value_type == "list":
+            value = []
+
+    if value:
+        if value_type in ('boolean', 'bool'):
+            value = boolean(value, strict=False)
+
+        elif value_type in ('integer', 'int'):
             value = int(value)
 
         elif value_type == 'float':
@@ -351,7 +364,9 @@ class ConfigManager(object):
 
             # ensure correct type
             try:
-                value = ensure_type(value, defs[config].get('type'), origin=origin)
+                value = ensure_type(value, defs[config].get('type'), config, origin=origin)
+            except AnsibleError as ansible_error:
+                raise ansible_error
             except Exception as e:
                 self.UNABLE.append(config)
 

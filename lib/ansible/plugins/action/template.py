@@ -82,14 +82,14 @@ class ActionModule(ActionBase):
             for s_type in ('source', 'dest', 'state', 'newline_sequence', 'variable_start_string', 'variable_end_string', 'block_start_string',
                            'block_end_string'):
                 value = locals()[s_type]
-                value = ensure_type(value, 'string')
+                value = ensure_type(value, 'string', s_type)
                 if value is not None and not isinstance(value, string_types):
                     raise AnsibleActionFail("%s is expected to be a string, but got %s instead" % (s_type, type(value)))
                 locals()[s_type] = value
 
             for b_type in ('force', 'follow', 'trim_blocks'):
                 value = locals()[b_type]
-                value = ensure_type(value, 'string')
+                value = ensure_type(value, 'string', b_type)
                 if value is not None and not isinstance(value, bool):
                     raise AnsibleActionFail("%s is expected to be a boolean, but got %s instead" % (b_type, type(value)))
                 locals()[b_type] = value

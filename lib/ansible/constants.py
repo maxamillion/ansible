@@ -48,7 +48,7 @@ def get_config(parser, section, key, env_var, default_value, value_type=None, ex
     if value is None:
         value = default_value
 
-    value = ensure_type(value, value_type)
+    value = ensure_type(value, value_type, key)
 
     return value
 
@@ -185,6 +185,6 @@ for setting in config.data.get_settings():
                 pass  # not a python data structure
         except:
             pass  # not templatable
-        value = ensure_type(value, setting.name)
+        value = ensure_type(value, setting.type, setting.name)
 
     set_constant(setting.name, value)

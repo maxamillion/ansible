@@ -35,20 +35,20 @@ class TestConfigData(unittest.TestCase):
         self.assertEquals(self.manager.data._global_settings, expected_ini)
 
     def test_ensure_type_list(self):
-        self.assertIsInstance(ensure_type('a,b', 'list'), list)
-        self.assertIsInstance(ensure_type(['a', 'b'], 'list'), list)
+        self.assertIsInstance(ensure_type('a,b', 'list'), list, "test_ensure_type_list")
+        self.assertIsInstance(ensure_type(['a', 'b'], 'list'), list, "test_ensure_type_list")
 
     def test_ensure_type_bool(self):
-        self.assertIsInstance(ensure_type('yes', 'bool'), bool)
-        self.assertIsInstance(ensure_type(True, 'bool'), bool)
+        self.assertIsInstance(ensure_type('yes', 'bool'), bool, "test_ensure_type_bool")
+        self.assertIsInstance(ensure_type(True, 'bool'), bool, "test_ensure_type_bool")
 
     def test_ensure_type_int(self):
-        self.assertIsInstance(ensure_type('10', 'int'), int)
-        self.assertIsInstance(ensure_type(20, 'int'), int)
+        self.assertIsInstance(ensure_type('10', 'int'), int, "test_ensure_type_int")
+        self.assertIsInstance(ensure_type(20, 'int'), int, "test_ensure_type_int")
 
     def test_ensure_type_float(self):
-        self.assertIsInstance(ensure_type('0.10', 'float'), float)
-        self.assertIsInstance(ensure_type(0.2, 'float'), float)
+        self.assertIsInstance(ensure_type('0.10', 'float'), float, "test_ensure_type_float")
+        self.assertIsInstance(ensure_type(0.2, 'float'), float, "test_ensure_type_float")
 
     def test_find_ini_file(self):
         cur_config = os.environ['ANSIBLE_CONFIG']
