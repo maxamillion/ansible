@@ -106,6 +106,7 @@ RESTRICTED_RESULT_KEYS = ('ansible_rsync_path', 'ansible_playbook_python')
 TREE_DIR = None
 VAULT_VERSION_MIN = 1.0
 VAULT_VERSION_MAX = 1.0
+INVALID_PLUGIN_NAME_CHARS = ('-', ',', '=', ) #FIXME - this should really just be a REGEX
 
 # FIXME: remove once play_context mangling is removed
 # the magic variable mapping dictionary below is used to translate

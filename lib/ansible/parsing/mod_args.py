@@ -25,6 +25,7 @@ from ansible.module_utils._text import to_text
 from ansible.parsing.splitter import parse_kv, split_args
 from ansible.plugins.loader import module_loader, action_loader
 from ansible.template import Templar
+from ansible import constants as C
 
 
 # For filtering out modules correctly below
@@ -294,6 +295,7 @@ class ModuleArgsParser:
                 thing = value
                 action, args = self._normalize_parameters(thing, action=action, additional_args=additional_args)
 
+
         # if we didn't see any module in the task at all, it's not a task really
         if action is None:
             if 'ping' not in module_loader:
@@ -314,5 +316,14 @@ class ModuleArgsParser:
                 raise AnsibleParserError("this task '%s' has extra params, which is only allowed in the following modules: %s" % (action,
                                                                                                                                   ", ".join(RAW_PARAM_MODULES)),
                                          obj=self._task_ds)
+        else:
+            # validate the module name
+            # FIXME - this should really just be a regex
+            for invalid_char in C.INVALID_PLUGIN_NAME_CHARS:
+                if invalid_char in action:
+                    raise AnsibleError(
+                        "Invalid module name found: %s \n"
+                        "Illegal character used in name: %s" % (action, invalid_char)
+                    )
 
         return (action, args, delegate_to)
