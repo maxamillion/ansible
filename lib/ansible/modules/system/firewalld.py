@@ -354,12 +354,9 @@ class InterfaceTransaction(FirewallTransaction):
                     self.fw.config.get_zone_config(old_zone_obj)
                 )
                 old_zone_settings.removeInterface(interface)    # remove from old
-                self.fw.config.set_zone_config(
-                    old_zone_obj,
-                    old_zone_settings.settings
-                )
+                self.update_fw_settings(old_zone_obj, old_zone_settings)
                 fw_settings.addInterface(interface)             # add to new
-                self.fw.config.set_zone_config(fw_zone, fw_settings.settings)
+                self.update_fw_settings(fw_zone, fw_settings)
         else:
             old_zone_name = self.fw.config().getZoneOfInterface(interface)
             if old_zone_name != self.zone:
@@ -369,7 +366,7 @@ class InterfaceTransaction(FirewallTransaction):
                     old_zone_settings.removeInterface(interface)  # remove from old
                     old_zone_obj.update(old_zone_settings)
                 fw_settings.addInterface(interface)              # add to new
-                fw_zone.update(fw_settings)
+                self.update_fw_settings(fw_zone, fw_settings)
 
     def set_disabled_immediate(self, interface):
         self.fw.removeInterface(self.zone, interface)
