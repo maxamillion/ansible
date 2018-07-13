@@ -63,6 +63,14 @@ class YumModuleUtil(object):
 
         self.module = module
 
+        self.params = self.module.params
+        self.enable_plugin = self.params.get('enable_plugin')
+        self.disable_plugin = self.params.get('disable_plugin')
+
+    def run(self):
+        """
+        actually execute the module code backend
+        """
 
         error_msgs = []
         if not HAS_RPM_PYTHON:
@@ -72,10 +80,6 @@ class YumModuleUtil(object):
 
         if error_msgs:
             self.module.fail_json(msg='. '.join(error_msgs))
-
-        self.params = self.module.params
-        self.enable_plugin = self.params.get('enable_plugin')
-        self.disable_plugin = self.params.get('disable_plugin')
 
         # fedora will redirect yum to dnf, which has incompatibilities
         # with how this module expects yum to operate. If yum-deprecated
@@ -95,12 +99,6 @@ class YumModuleUtil(object):
             if yum_path:
                 self.module.run_command('%s -y install yum-utils' % yum_path)
             self.repoquerybin = self.module.get_bin_path('repoquery', required=False)
-
-
-    def run(self):
-        """
-        actually execute the module code backend
-        """
 
         if self.params['list']:
             if not self.repoquerybin:
@@ -1128,9 +1126,9 @@ class YumModuleUtil(object):
             dis_repos = disablerepo.split(',')
             r_cmd = ['--disablerepo=%s' % disablerepo]
             self.yum_basecmd.extend(r_cmd)
-        if enablerepo:
-            en_repos = enablerepo.split(',')
-            r_cmd = ['--enablerepo=%s' % enablerepo]
+        if enablerepo and len(enablerepo) == 1:
+            en_repos = enablerepo[0].split(',')
+            r_cmd = ['--enablerepo=%s' % enablerepo[0]]
             self.yum_basecmd.extend(r_cmd)
 
         if self.enable_plugin:
@@ -1219,3 +1217,6 @@ class YumModuleUtil(object):
         return res
 
 
+    @staticmethod
+    def has_yum():
+        return HAS_YUM_PYTHON

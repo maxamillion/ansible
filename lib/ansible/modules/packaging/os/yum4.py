@@ -267,6 +267,7 @@ EXAMPLES = '''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.yum import YumModuleUtil
+from ansible.module_utils.dnf import DnfModuleUtil
 
 def main():
     # state=installed name=pkgspec
@@ -286,8 +287,8 @@ def main():
             exclude=dict(type='str'),
             # removed==absent, installed==present, these are accepted as aliases
             state=dict(type='str', default='installed', choices=['absent', 'installed', 'latest', 'present', 'removed']),
-            enablerepo=dict(type='str'),
-            disablerepo=dict(type='str'),
+            enablerepo=dict(type='list', default=[]),
+            disablerepo=dict(type='list', default=[]),
             list=dict(type='str'),
             conf_file=dict(type='str'),
             disable_gpg_check=dict(type='bool', default=False),
@@ -303,13 +304,21 @@ def main():
             bugfix=dict(required=False, type='bool', default=False),
             enable_plugin=dict(type='list', default=[]),
             disable_plugin=dict(type='list', default=[]),
+            autoremove=dict(type='bool', default=False),
+            releasever=dict(default=None),
         ),
         required_one_of=[['name', 'list']],
         mutually_exclusive=[['name', 'list']],
         supports_check_mode=True,
     )
 
-    module_implementation = YumModuleUtil(module)
+    if YumModuleUtil.has_yum():
+        module_implementation = YumModuleUtil(module)
+    elif DnfModuleUtil.has_dnf():
+        module_implementation = DnfModuleUtil(module)
+    else:
+        module.fail_json(msg="No package provider found")
+
     module_implementation.run()
 
 
