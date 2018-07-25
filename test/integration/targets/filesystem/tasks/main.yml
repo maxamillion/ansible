@@ -26,4 +26,5 @@
     # https://www.kernel.org/pub/linux/utils/util-linux/v2.21/v2.21-ChangeLog
     # https://anonscm.debian.org/cgit/collab-maint/pkg-util-linux.git/commit/?id=04f7020eadf31efc731558df92daa0a1c336c46c
     - 'not (item.key == "btrfs" and (ansible_distribution == "Ubuntu" and ansible_distribution_release == "trusty"))'
+    - 'not (item.key == "btrfs") and (btrfsprogs_installed == false)'
   loop: "{{ lookup('dict', tested_filesystems) }}"
