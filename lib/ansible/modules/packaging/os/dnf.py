@@ -1011,8 +1011,25 @@ class DnfModule(YumDnf):
                     for package in self.base.transaction.remove_set:
                         response['results'].append("Removed: {0}".format(package))
 
+                    transaction_info = self.base.history.last(complete_transactions_only=False)
+                    transaction_response_data = {
+                        "trans_data": [
+                            "Package:{0} :: State:{1} :: Done:{2}".format(t_data.nevra, t_data.state, t_data.done)
+                            for t_data in transaction_info.trans_data
+                        ],
+                        "errors": transaction_info.errors,
+                        "trans_skip": transaction_info.trans_skip,
+                        "trans_with": [t_data.nevra for t_data in transaction_info.trans_with],
+                        "loginuid": transaction_info.loginuid,
+                        "return_code": transaction_info.return_code,
+                        "rpmdb_problems": transaction_info.rpmdb_problems,
+                        "tid": transaction_info.tid
+                    }
+                    response['transaction'] = transaction_response_data
+
                 if failure_response['failures']:
                     failure_response['msg'] = 'Failed to install some of the specified packages',
+                    failure_response['transaction'] = transaction_response_data
                     self.module.exit_json(**response)
                 self.module.exit_json(**response)
         except dnf.exceptions.DepsolveError as e:
