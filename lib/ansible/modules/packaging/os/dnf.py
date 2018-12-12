@@ -1120,6 +1120,9 @@ class DnfModule(YumDnf):
         except dnf.exceptions.DepsolveError as e:
             failure_response['msg'] = "Depsolve Error occured: {0}".format(to_native(e))
             self.module.fail_json(**failure_response)
+        except dnf.exceptions.TransactionCheckError as e:
+            failure_response['msg'] = "Transaction Check Error occured: {0}".format(to_native(e))
+            self.module.fail_json(**failure_response)
         except dnf.exceptions.Error as e:
             if to_text("already installed") in to_text(e):
                 response['changed'] = False
