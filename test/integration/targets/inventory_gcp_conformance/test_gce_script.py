@@ -27,14 +27,11 @@ else:
 
 #shutil.copy(abs_script, local_gce_path)
 
-class TestScript(unittest.TestCase):
+class TestScript(object):
     @mock.patch('sys.exit', spec=sys.exit)
     @mock.patch('libcloud.compute.types.Provider', spec=_libcloud.compute.types.Provider)
     @mock.patch('libcloud.compute.providers.get_driver', spec=_libcloud.compute.providers.get_driver)
-    def test_gce_script(self, mocked_get_driver, mocked_provider, mocked_sys_exit):
-        import q; q.q(mocked_get_driver)
-        import q; q.q(mocked_provider)
-        import q; q.q(mocked_sys_exit)
+    def test_gce_script(self, mocked_get_driver, mocked_provider, mocked_sys_exit, capsys):
         try:
             os.environ['GCE_INI_PATH'] = './gce.ini'
             import gce
@@ -49,5 +46,6 @@ class TestScript(unittest.TestCase):
         except ImportError as e:
             sys.exit("Unable to import gce.py: %s" % e)
         gce.GceInventory()
+        script_output = capsys.readouterr()
 
 #os.remove(local_gce_path)
