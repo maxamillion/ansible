@@ -31,8 +31,14 @@ try:
         #
         # NOTE:
         #  online and offline operations do not share a common firewalld API
-        from firewall.core.fw_test import Firewall_test
-        fw = Firewall_test()
+        try:
+            from firewall.core.fw_test import Firewall_test
+            fw = Firewall_test()
+        except (AttributeError, FirewallError):
+            # In firewalld version 0.7.0 this behavior changed
+            from firewall.core.fw import Firewall
+            fw = Firewall(offline=True)
+
         fw.start()
 
 except ImportError:
