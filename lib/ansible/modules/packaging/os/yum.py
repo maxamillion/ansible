@@ -393,6 +393,20 @@ class YumModule(YumDnf):
         self.lockfile = '/var/run/yum.pid'
         self._yum_base = None
 
+    import q;
+    @q.t
+    def _run_cmd_check_for_autoremove(self, cmd):
+
+        rc, out, err = self.module.run_command(cmd)
+
+        if rc != 0:
+            if self.autoremove and 'No such command' in out:
+                self.module.fail_json(msg='Version of YUM too old for autoremove: Requires yum 3.4.3 (RHEL/CentOS 7+)')
+            else:
+                self.module.fail_json(**res)
+
+        return rc, out, err
+
     def _enablerepos_with_error_checking(self):
         # NOTE: This seems unintuitive, but it mirrors yum's CLI behavior
         if len(self.enablerepo) == 1:
@@ -1098,6 +1112,7 @@ class YumModule(YumDnf):
         res['changed'] = False
         res['rc'] = 0
 
+
         for pkg in items:
             if pkg.startswith('@'):
                 installed = self.is_group_env_installed(pkg)
@@ -1108,6 +1123,8 @@ class YumModule(YumDnf):
                 pkgs.append(pkg)
             else:
                 res['results'].append('%s is not installed' % pkg)
+
+        import q; q.q(pkgs)
 
         if pkgs:
             if self.module.check_mode:
@@ -1121,17 +1138,7 @@ class YumModule(YumDnf):
             else:
                 cmd = self.yum_basecmd + ["remove"] + pkgs
 
-            rc, out, err = self.module.run_command(cmd)
-
-            res['rc'] = rc
-            res['results'].append(out)
-            res['msg'] = err
-
-            if rc != 0:
-                if self.autoremove and 'No such command' in out:
-                    self.module.fail_json(msg='Version of YUM too old for autoremove: Requires yum 3.4.3 (RHEL/CentOS 7+)')
-                else:
-                    self.module.fail_json(**res)
+            rc, out, err = self._run_cmd_check_for_autoremove(cmd)
 
             # compile the results into one batch. If anything is changed
             # then mark changed
@@ -1153,7 +1160,29 @@ class YumModule(YumDnf):
                     res['msg'] = "Package '%s' couldn't be removed!" % pkg
                     self.module.fail_json(**res)
 
+            res['results'].append(out)
             res['changed'] = True
+
+        elif not pkgs and self.autoremove:
+            if self.module.check_mode:
+                cmd = self.yum_basecmd + ["autoremove", "--assumeno"]
+            else:
+                cmd = self.yum_basecmd + ["autoremove"]
+
+            rc, out, err = self._run_cmd_check_for_autoremove(cmd)
+
+            if 'No Packages marked for removal' in out:
+                res['changed'] = False
+                res['results'] = []
+            else:
+                res['changed'] = True
+                res['results'].append(out)
+
+            if self.module.check_mode:
+                self.module.exit_json(**res)
+
+        res['rc'] = rc
+        res['msg'] = err
 
         return res
 
