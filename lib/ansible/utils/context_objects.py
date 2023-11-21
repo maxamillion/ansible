@@ -14,13 +14,13 @@ from ansible.module_utils.six import add_metaclass, binary_type, text_type
 from ansible.utils.singleton import Singleton
 
 
-def _make_immutable(obj):
+def _make_immutable(obj) -> (ImmutableDict | Set | Sequence | Mapping | text_type | binary_type):
     """Recursively convert a container and objects inside of it into immutable data types"""
     if isinstance(obj, (text_type, binary_type)):
         # Strings first because they are also sequences
         return obj
     elif isinstance(obj, Mapping):
-        temp_dict = {}
+        temp_dict: dict[str, object] = {}
         for key, value in obj.items():
             if isinstance(value, Container):
                 temp_dict[key] = _make_immutable(value)
@@ -68,14 +68,14 @@ class CLIArgs(ImmutableDict):
     in the future, they would use CLIArgs instead of GlobalCLIArgs to store their version of command
     line flags.
     """
-    def __init__(self, mapping):
-        toplevel = {}
+    def __init__(self, mapping) -> None:
+        toplevel: dict[str, object] = {}
         for key, value in mapping.items():
             toplevel[key] = _make_immutable(value)
         super(CLIArgs, self).__init__(toplevel)
 
     @classmethod
-    def from_options(cls, options):
+    def from_options(cls, options) -> CLIArgs:
         return cls(vars(options))
 
 

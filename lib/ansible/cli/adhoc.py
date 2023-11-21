@@ -20,7 +20,7 @@ from ansible.playbook import Playbook
 from ansible.playbook.play import Play
 from ansible.utils.display import Display
 
-display = Display()
+display: Display = Display()
 
 
 class AdHocCLI(CLI):
@@ -28,9 +28,9 @@ class AdHocCLI(CLI):
         this command allows you to define and run a single task 'playbook' against a set of hosts
     '''
 
-    name = 'ansible'
+    name: str = 'ansible'
 
-    def init_parser(self):
+    def init_parser(self) -> None:
         ''' create an options parser for bin/ansible '''
         super(AdHocCLI, self).init_parser(usage='%prog <host-pattern> [options]',
                                           desc="Define and run a single task 'playbook' against a set of hosts",

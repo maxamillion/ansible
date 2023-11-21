@@ -27,6 +27,9 @@ from ansible.playbook.playbook_include import PlaybookInclude
 from ansible.plugins.loader import add_all_plugin_dirs
 from ansible.utils.display import Display
 from ansible.utils.path import unfrackpath
+from ansible.parsing.dataloader import DataLoader
+from ansible.vars.manager import VariableManager
+from typing import List, Optional
 
 display = Display()
 
@@ -36,7 +39,7 @@ __all__ = ['Playbook']
 
 class Playbook:
 
-    def __init__(self, loader):
+    def __init__(self, loader: DataLoader) -> None:
         # Entries in the datastructure of a playbook may
         # be either a play or an include statement
         self._entries = []
@@ -45,12 +48,12 @@ class Playbook:
         self._file_name = None
 
     @staticmethod
-    def load(file_name, variable_manager=None, loader=None):
+    def load(file_name: str, variable_manager: Optional[VariableManager]=None, loader: Optional[DataLoader]=None) -> "Playbook":
         pb = Playbook(loader=loader)
         pb._load_playbook_data(file_name=file_name, variable_manager=variable_manager)
         return pb
 
-    def _load_playbook_data(self, file_name, variable_manager, vars=None):
+    def _load_playbook_data(self, file_name: str, variable_manager: VariableManager, vars: None=None) -> None:
 
         if os.path.isabs(file_name):
             self._basedir = os.path.dirname(file_name)
@@ -111,5 +114,5 @@ class Playbook:
     def get_loader(self):
         return self._loader
 
-    def get_plays(self):
+    def get_plays(self) -> List[Play]:
         return self._entries[:]
