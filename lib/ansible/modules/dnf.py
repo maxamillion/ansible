@@ -1377,8 +1377,40 @@ class DnfModule(YumDnf):
                 failure_response['msg'] = "Unknown Error occurred: {0}".format(to_native(e))
                 self.module.fail_json(**failure_response)
 
+    def rpm_ostree_transaction(self):
+        def locally_installed(module, pkgname):
+            (rc, out, err) = module.run_command('{0} -q {1}'.format(module.get_bin_path("rpm"), pkgname).split())
+            return (rc == 0)
+
+        pkgs = []
+
+        if self.module.params['state'] in ['present', 'installed', 'latest']:
+            for pkg in self.module.params['name']:
+                if not locally_installed(self.module, pkg):
+                    pkgs.append(pkg)
+        elif self.module.params['state'] in ['absent', 'removed']:
+            for pkg in self.module.params['name']:
+                if locally_installed(self.module, pkg):
+                    pkgs.append(pkg)
+
+        if not pkgs:
+            self.module.exit_json(msg="No changes made.")
+        else:
+            if os.path.exists('/usr/bin/bootc'):
+                rpm_ostree_type = 'bootc image'
+            else:
+                rpm_ostree_type = 'rpm-ostree commit'
+            if self.module.params['state'] in ['present', 'installed', 'latest']:
+                self.module.fail_json(msg="The following packages are absent in the currently booted %s: %s" % (rpm_ostree_type, ' '.join(pkgs)))
+            else:
+                self.module.fail_json(msg="The following packages are present in the currently booted %s: %s" % (rpm_ostree_type, ' '.join(pkgs)))
+
     def run(self):
         """The main function."""
+
+        # Dirty hack to make ostree based systems work, either rpm-ostree or bootc managed
+        if os.path.exists('/run/ostree-booted'):
+            self.rpm_ostree_transaction()
 
         # Check if autoremove is called correctly
         if self.autoremove:
